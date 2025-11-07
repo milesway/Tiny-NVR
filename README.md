@@ -137,19 +137,6 @@ The recorder automatically reconnects on stream failures. If disconnections pers
 - Verify network reliability
 - Consider using TCP transport (already enabled by default)
 
-## Technical Details
-
-- **RTSP Transport**: TCP (more stable than UDP)
-- **Video Format**: MP4 container with original codecs (no re-encoding)
-- **Restart Policy**: `unless-stopped` (automatically restarts on failure)
-- **Base Image**: Alpine Linux (minimal footprint)
-- **Recording Method**: FFmpeg with segment duration limit
-- **Error Recovery**: Automatic retry with exponential backoff after consecutive failures
-- **Disk Space Monitoring**: Checks available disk space before recording (requires 100MB minimum)
-- **File Validation**: Verifies recorded files exist and have content before marking as successful
-- **Signal Handling**: Graceful shutdown on SIGTERM/SIGINT signals
-- **Configuration Validation**: Validates all configuration parameters on startup
-
 ## License
 
 MIT License - see LICENSE file for details
