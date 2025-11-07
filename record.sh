@@ -189,10 +189,14 @@ record_segment() {
     set +e  # Temporarily disable exit on error to capture exit code
     
     # Run ffmpeg with proper error handling
+    # Note: Added timestamp handling flags to fix "Timestamps are unset" warning
     if ffmpeg \
         -rtsp_transport tcp \
         -i "${RTSP_URL}" \
         -t "${SEGMENT_DURATION}" \
+        -fflags +genpts \
+        -copyts \
+        -start_at_zero \
         -c copy \
         -f mp4 \
         -movflags +faststart \
