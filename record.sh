@@ -5,6 +5,20 @@
 
 set -euo pipefail
 
+# Load config file if it exists (priority: /app/config.env > .env)
+# This allows users to edit /app/config.env inside the container
+if [ -f "/app/config.env" ]; then
+    set -a  # Automatically export all variables
+    # shellcheck source=/dev/null
+    . /app/config.env
+    set +a  # Turn off automatic export
+elif [ -f ".env" ]; then
+    set -a  # Automatically export all variables
+    # shellcheck source=/dev/null
+    . .env
+    set +a  # Turn off automatic export
+fi
+
 # Configuration from environment variables
 RTSP_URL="${RTSP_URL:-rtsp://example.com/stream}"
 SEGMENT_DURATION="${SEGMENT_DURATION:-1200}"  # 20 minutes in seconds (20 * 60)

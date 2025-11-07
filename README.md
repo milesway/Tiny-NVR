@@ -17,15 +17,51 @@ A lightweight, containerized RTSP stream recorder that automatically segments re
 ## Requirements
 
 - Docker
-- Docker Compose
 - RTSP stream URL
 
 ## Quick Start
 
-1. **Configure your RTSP stream:**
+### Option 1: Using Docker Run (Simplest)
+
+Pull and run directly from Docker Hub:
+
+```bash
+docker run -d \
+  --name tiny-nvr \
+  --restart unless-stopped \
+  -e RTSP_URL=rtsp://your-camera-ip:554/stream \
+  -v $(pwd)/recordings:/recordings \
+  milesway6/tiny-nvr
+```
+
+**That's it!** The container will automatically pull from Docker Hub and start recording.
+
+### Option 2: Using Docker Compose
+
+1. **Create a `docker-compose.yml` file** (or use the provided one):
+   ```yaml
+   version: '3.8'
+
+   services:
+     tiny-nvr:
+       image: milesway6/tiny-nvr
+       container_name: tiny-nvr
+       restart: unless-stopped
+       environment:
+         - RTSP_URL=rtsp://your-camera-ip:554/stream
+         - SEGMENT_DURATION=1200
+         - FILENAME_PATTERN=recording_%Y%m%d_%H%M%S.mp4
+       volumes:
+         - ./recordings:/recordings
+         # Optional: Mount config.env for persistent configuration
+         # - ./config.env:/app/config.env
+   ```
+
+   **Or use environment variables from your shell:**
    ```bash
-   # Edit .env and set your RTSP_URL
-   nano .env
+   export RTSP_URL=rtsp://your-camera-ip:554/stream
+   export SEGMENT_DURATION=1200
+   docker-compose up -d
    ```
 
 2. **Start the recorder:**
@@ -45,13 +81,97 @@ A lightweight, containerized RTSP stream recorder that automatically segments re
 
 ## Configuration
 
-Edit the `.env` file to configure:
+The recorder can be configured in three ways (in order of priority):
 
-- `RTSP_URL`: Your RTSP stream URL (e.g., `rtsp://user:pass@192.168.1.100:554/stream`)
-- `SEGMENT_DURATION`: Duration of each segment in seconds (default: 1200 = 20 minutes)
+1. **Environment variables** (recommended for Docker)
+2. **`/app/config.env` file** (editable inside container)
+3. **`.env` file** (for local development)
+
+### Configuration Options
+
+Configure using environment variables:
+
+- `RTSP_URL` **(required)**: Your RTSP stream URL (e.g., `rtsp://user:pass@192.168.1.100:554/stream`)
+- `SEGMENT_DURATION`: Duration of each segment in seconds (default: `1200` = 20 minutes)
 - `FILENAME_PATTERN`: Filename format using strftime patterns (default: `recording_%Y%m%d_%H%M%S.mp4`)
+- `OUTPUT_DIR`: Output directory inside container (default: `/recordings` - mount this as a volume)
 - `LOG_FILE`: Path to application log file (default: `/tmp/rtsp-recorder.log`)
 - `FFMPEG_LOG_FILE`: Path to FFmpeg log file (default: `/tmp/ffmpeg.log`)
+
+### Using config.env File
+
+The `config.env` file is included in the Docker image and GitHub repository. You can edit it directly inside the container or mount it as a volume for persistent changes. See the "Editing Configuration Inside Container" section below for details.
+
+### Example with All Options
+
+```bash
+docker run -d \
+  --name tiny-nvr \
+  --restart unless-stopped \
+  -e RTSP_URL=rtsp://admin:password@192.168.1.100:554/stream1 \
+  -e SEGMENT_DURATION=1800 \
+  -e FILENAME_PATTERN=cam1_%Y%m%d_%H%M%S.mp4 \
+  -v /path/to/recordings:/recordings \
+  milesway6/tiny-nvr
+```
+
+### Updating Configuration
+
+To change configuration, simply stop the container, update environment variables, and restart:
+
+```bash
+# Stop the container
+docker stop tiny-nvr
+docker rm tiny-nvr
+
+# Start with new configuration
+docker run -d \
+  --name tiny-nvr \
+  --restart unless-stopped \
+  -e RTSP_URL=rtsp://new-camera-ip:554/stream \
+  -e SEGMENT_DURATION=900 \
+  -v $(pwd)/recordings:/recordings \
+  milesway6/tiny-nvr
+```
+
+**Or with Docker Compose:**
+```bash
+# Edit docker-compose.yml or set environment variables
+export RTSP_URL=rtsp://new-camera-ip:554/stream
+docker-compose down
+docker-compose up -d
+```
+
+### Editing Configuration Inside Container
+
+You can login to the container, edit the configuration file, and restart the program:
+
+```bash
+# 1. Login to the container
+docker exec -it tiny-nvr sh
+
+# 2. Edit the configuration file
+nano /app/config.env
+# Or use vi: vi /app/config.env
+
+# Example: Uncomment and edit lines in /app/config.env
+# Change from:
+#   # RTSP_URL=rtsp://example.com/stream
+# To:
+#   RTSP_URL=rtsp://your-camera-ip:554/stream
+
+# Save and exit (in nano: Ctrl+X, then Y, then Enter)
+
+# 3. Exit the container
+exit
+
+# 4. Restart the container to apply changes
+docker restart tiny-nvr
+```
+
+**Note:** The `config.env` file is included in the Docker image at `/app/config.env` and is also available in the GitHub repository. Changes to this file inside the container are temporary and will be lost when the container is removed. For persistent configuration, either:
+- Use environment variables (recommended)
+- Mount a config file as a volume (see docker-compose.yml example below)
 
 ### Filename Pattern Examples
 
@@ -90,27 +210,29 @@ Log files are located at:
 
 View logs inside the container:
 ```bash
-docker exec rtsp-recorder cat /tmp/rtsp-recorder.log
-docker exec rtsp-recorder tail -f /tmp/rtsp-recorder.log
+docker exec tiny-nvr cat /tmp/rtsp-recorder.log
+docker exec tiny-nvr tail -f /tmp/rtsp-recorder.log
 ```
 
 ## Monitoring
 
 - **View container status:**
   ```bash
+  docker ps | grep tiny-nvr
+  # Or with docker-compose:
   docker-compose ps
   ```
 
 - **View logs:**
   ```bash
-  docker-compose logs -f rtsp-recorder
-  # Or with Docker timestamps:
-  docker-compose logs -f -t rtsp-recorder
+  docker logs -f tiny-nvr
+  # Or with docker-compose:
+  docker-compose logs -f
   ```
 
 - **View container stats:**
   ```bash
-  docker stats rtsp-recorder
+  docker stats tiny-nvr
   ```
 
 ## Troubleshooting
@@ -118,16 +240,18 @@ docker exec rtsp-recorder tail -f /tmp/rtsp-recorder.log
 ### Connection Issues
 - Ensure the RTSP URL is correct and accessible from the Docker host
 - Check if the RTSP server requires authentication (include credentials in URL)
-- Verify network connectivity: `docker exec rtsp-recorder ping <rtsp-server-ip>`
+- Verify network connectivity: `docker exec tiny-nvr ping <rtsp-server-ip>`
 
 ### No Recordings
-- Check logs: `docker-compose logs -t rtsp-recorder` (all logs include timestamps)
-- Verify the `recordings/` directory exists and has write permissions
+- Check logs: `docker logs tiny-nvr` (all logs include timestamps)
+- Verify the recordings volume is mounted correctly: `docker inspect tiny-nvr | grep Mounts`
+- Ensure the `recordings/` directory exists and has write permissions on the host
 - Ensure the RTSP stream is active and accessible
 
 ### Permission Errors
 - Ensure the `recordings/` directory has write permissions:
   ```bash
+  mkdir -p recordings
   chmod 755 recordings/
   ```
 

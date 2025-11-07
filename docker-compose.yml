@@ -1,24 +1,29 @@
-version: '1.0.1'
+version: '3.8'
 
 services:
-  rtsp-recorder:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: rtsp-recorder
+  tiny-nvr:
+    image: milesway6/tiny-nvr:latest
+    container_name: tiny-nvr
     restart: unless-stopped
     environment:
+      # Required: Set your RTSP stream URL
       - RTSP_URL=${RTSP_URL:-rtsp://example.com/stream}
+      # Optional: Customize segment duration (default: 1200 seconds = 20 minutes)
       - SEGMENT_DURATION=${SEGMENT_DURATION:-1200}
-      - OUTPUT_DIR=/recordings
+      # Optional: Customize filename pattern (default: recording_%Y%m%d_%H%M%S.mp4)
       - FILENAME_PATTERN=${FILENAME_PATTERN:-recording_%Y%m%d_%H%M%S.mp4}
+      # Optional: Log file paths (defaults shown)
       - LOG_FILE=${LOG_FILE:-/tmp/rtsp-recorder.log}
       - FFMPEG_LOG_FILE=${FFMPEG_LOG_FILE:-/tmp/ffmpeg.log}
+      # Output directory (should match volume mount)
+      - OUTPUT_DIR=/recordings
     volumes:
+      # Mount recordings directory (create it first: mkdir recordings)
       - ./recordings:/recordings
+      # Optional: Mount config file for persistent configuration (uncomment to use)
+      # - ./config.env:/app/config.env
     stdin_open: true
     tty: true
-    command: /app/record.sh
     logging:
       driver: "json-file"
       options:

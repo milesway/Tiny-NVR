@@ -1,0 +1,11 @@
+# Exclude unnecessary files from Docker build context
+.git
+.gitignore
+README.md
+LICENSE
+docker-compose.yml
+recordings/
+*.md
+.env
+# Note: config.env is included so it gets copied into the Docker image
+
