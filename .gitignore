@@ -1,0 +1,10 @@
+# Recordings directory
+recordings/
+
+# Environment file with sensitive data
+.env
+
+# Logs
+*.log
+/tmp/
+

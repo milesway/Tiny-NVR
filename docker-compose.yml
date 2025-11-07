@@ -1,0 +1,28 @@
+version: '1.0.1'
+
+services:
+  rtsp-recorder:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: rtsp-recorder
+    restart: unless-stopped
+    environment:
+      - RTSP_URL=${RTSP_URL:-rtsp://example.com/stream}
+      - SEGMENT_DURATION=${SEGMENT_DURATION:-1200}
+      - OUTPUT_DIR=/recordings
+      - FILENAME_PATTERN=${FILENAME_PATTERN:-recording_%Y%m%d_%H%M%S.mp4}
+      - LOG_FILE=${LOG_FILE:-/tmp/rtsp-recorder.log}
+      - FFMPEG_LOG_FILE=${FFMPEG_LOG_FILE:-/tmp/ffmpeg.log}
+    volumes:
+      - ./recordings:/recordings
+    stdin_open: true
+    tty: true
+    command: /app/record.sh
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        tag: "{{.Name}}"
+
