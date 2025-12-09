@@ -199,12 +199,14 @@ record_segment() {
     # Run ffmpeg with proper error handling
     # Note: Added timestamp handling flags to fix "Timestamps are unset" warning
     if ffmpeg \
+        -y \
+        -fflags +genpts+igndts \
         -rtsp_transport tcp \
         -analyzeduration 10000000 \
         -probesize 10000000 \
+        -use_wallclock_as_timestamps 1 \
         -i "${RTSP_URL}" \
         -t "${SEGMENT_DURATION}" \
-        -fflags +genpts \
         -avoid_negative_ts make_zero \
         -c copy \
         -f mp4 \
