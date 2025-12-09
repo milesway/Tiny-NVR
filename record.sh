@@ -192,11 +192,12 @@ record_segment() {
     # Note: Added timestamp handling flags to fix "Timestamps are unset" warning
     if ffmpeg \
         -rtsp_transport tcp \
+        -analyzeduration 10000000 \
+        -probesize 10000000 \
         -i "${RTSP_URL}" \
         -t "${SEGMENT_DURATION}" \
         -fflags +genpts \
-        -copyts \
-        -start_at_zero \
+        -avoid_negative_ts make_zero \
         -c copy \
         -f mp4 \
         -movflags +faststart \
