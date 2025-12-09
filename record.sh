@@ -168,8 +168,16 @@ record_segment() {
     local segment_end_time
     local duration_actual
     
+    # Create daily directory
+    local daily_dir="${OUTPUT_DIR}/$(date +%Y-%m-%d)"
+    
+    if ! mkdir -p "${daily_dir}"; then
+        log_error "Failed to create daily directory: ${daily_dir}"
+        return 1
+    fi
+
     # Generate output filename with timestamp
-    if ! output_file="${OUTPUT_DIR}/$(date +"${FILENAME_PATTERN}" 2>/dev/null)"; then
+    if ! output_file="${daily_dir}/$(date +"${FILENAME_PATTERN}" 2>/dev/null)"; then
         log_error "Failed to generate output filename"
         return 1
     fi
