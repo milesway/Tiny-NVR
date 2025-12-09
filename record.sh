@@ -211,7 +211,6 @@ record_segment() {
         -c copy \
         -f mp4 \
         -movflags +faststart \
-        -y \
         -loglevel warning \
         -err_detect ignore_err \
         -reconnect 1 \
